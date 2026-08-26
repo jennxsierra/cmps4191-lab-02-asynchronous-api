@@ -1,7 +1,5 @@
--- Filename: 000003_trigger_updated_at.down.sql
+-- Filename: 000005_create_updated_at_trigger.down.sql
 BEGIN;
-
-DROP TRIGGER IF EXISTS jobs_updated_at ON jobs;
 
 DROP TRIGGER IF EXISTS consumers_updated_at ON consumers;
 

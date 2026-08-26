@@ -1,4 +1,3 @@
--- Filename: 000004_example_data.down.sql
 BEGIN;
 
 DELETE FROM jobs

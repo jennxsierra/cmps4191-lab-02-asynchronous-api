@@ -1,8 +1,6 @@
+-- Sample data for the consumer-activity report labs.
 BEGIN;
 
--- ====================================================================================
--- CONSUMERS
--- ====================================================================================
 INSERT INTO
     consumers (
         id,
@@ -42,10 +40,7 @@ VALUES
         now() - interval '30 days'
     );
 
--- ====================================================================================
--- API KEYS
--- ====================================================================================
--- These are deliberately non-secret demonstration hashes, not usable API keys.
+-- Demonstration-only hashes; these are not usable API credentials.
 INSERT INTO
     api_keys (
         id,
@@ -99,9 +94,6 @@ VALUES
         now() - interval '120 days'
     );
 
--- ====================================================================================
--- JOBS
--- ====================================================================================
 INSERT INTO
     jobs (
         id,

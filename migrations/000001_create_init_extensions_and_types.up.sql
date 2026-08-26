@@ -1,9 +1,7 @@
--- Filename: 000001_extensions_types.up.sql
+-- Filename: 000001_create_init_extensions_and_types.up.sql
 BEGIN;
 
 CREATE EXTENSION IF NOT EXISTS citext;
-
-CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
 CREATE TYPE consumer_status AS ENUM('active', 'suspended', 'terminated');
 
