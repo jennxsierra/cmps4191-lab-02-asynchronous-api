@@ -36,17 +36,21 @@ func (app *application) serve() error {
 		signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 		s := <-quit
 
-		app.logger.Info("Shutting down server", "signal", s.String())
+		app.logger.Info("shutting down server due to caught signal", "signal", s.String())
 
 		// allow HTTP server to close any remaining connections with the configured timeout period
-		ctx, cancel := context.WithTimeout(context.Background(), time.Duration(app.config.timeout)*time.Second)
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
 		err := srv.Shutdown(ctx)
 		if err != nil {
 			shutdownError <- err
 		}
 
-		app.logger.Info("Completing background tasks", "addr", srv.Addr)
+		app.logger.Info("completing background tasks", "addr", srv.Addr)
+
+		if app.workerCancel != nil {
+			app.workerCancel()
+		}
 
 		// block until all goroutines are finished
 		app.wg.Wait()
@@ -55,7 +59,7 @@ func (app *application) serve() error {
 
 	// Run HTTP Server
 
-	app.logger.Info("Starting server", "addr", srv.Addr, "env", app.config.env)
+	app.logger.Info("starting server", "addr", srv.Addr, "env", app.config.env)
 
 	// we should expect the ErrServerClosed error since Shutdown was called.
 	err := srv.ListenAndServe()
@@ -69,7 +73,7 @@ func (app *application) serve() error {
 		return err
 	}
 
-	app.logger.Info("Stopped server", "addr", srv.Addr)
+	app.logger.Info("stopped server", "addr", srv.Addr)
 
 	return nil
 }

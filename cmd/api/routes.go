@@ -24,25 +24,16 @@ func (app *application) routes() http.Handler {
 
 	// consumer routes
 	router.HandlerFunc(http.MethodPost, "/v1/consumers", app.createConsumerHandler)
-	router.HandlerFunc(http.MethodGet, "/v1/consumers/:id", app.showConsumerHandler)
-	router.HandlerFunc(http.MethodPut, "/v1/consumers/:id", app.updateConsumerHandler)
-	router.HandlerFunc(http.MethodDelete, "/v1/consumers/:id", app.deleteConsumerHandler)
 
-	// API key routes
-	router.HandlerFunc(http.MethodPost, "/v1/api-keys", app.createAPIKeyHandler)
-	router.HandlerFunc(http.MethodGet, "/v1/api-keys/:id", app.showAPIKeyHandler)
-	router.HandlerFunc(http.MethodPut, "/v1/api-keys/:id", app.updateAPIKeyHandler)
-	router.HandlerFunc(http.MethodDelete, "/v1/api-keys/:id", app.deleteAPIKeyHandler)
+	// report routes
+	router.HandlerFunc(http.MethodPost, "/v1/reports", app.createReportHandler)
 
 	// job routes
-	router.HandlerFunc(http.MethodGet, "/v1/jobs/:public_id", app.getJobHandler)
-
-	// consumer activity report routes
-	router.HandlerFunc(http.MethodPost, "/v1/reports", app.createReportHandler)
+	router.HandlerFunc(http.MethodGet, "/v1/jobs/:id", app.getJobHandler)
 
 	// GLOBAL MIDDLEWARE
 
 	return app.requestLogger(
-		router, // last middleware
+		router,
 	)
 }

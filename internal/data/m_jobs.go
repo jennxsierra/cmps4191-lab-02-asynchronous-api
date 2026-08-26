@@ -7,6 +7,7 @@ import (
 	"errors"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/lib/pq"
 )
 
@@ -55,7 +56,7 @@ func (m JobModel) Insert(job *Job) error {
 	return nil
 }
 
-func (m JobModel) GetByPublicID(publicID string) (*Job, error) {
+func (m JobModel) GetByPublicID(publicID uuid.UUID) (*Job, error) {
 	query := `SELECT id, public_id, consumer_id, job_type, status, payload,
 		COALESCE(result, 'null'::jsonb), error_message, started_at, completed_at, created_at
 		FROM jobs WHERE public_id = $1`

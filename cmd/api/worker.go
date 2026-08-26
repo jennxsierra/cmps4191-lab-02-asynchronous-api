@@ -30,7 +30,7 @@ func (app *application) startReportWorker(ctx context.Context) {
 }
 
 func (app *application) processNextReportJob(ctx context.Context) error {
-	job, err := app.models.Job.ClaimNext(ctx)
+	job, err := app.models.Jobs.ClaimNext(ctx)
 	if err != nil {
 		return err
 	}
@@ -48,15 +48,15 @@ func (app *application) processNextReportJob(ctx context.Context) error {
 		}
 	}
 
-	report, err := app.models.ConsumerActivityReport.Generate(job.ConsumerID, job.Payload.From, job.Payload.To)
+	report, err := app.models.Reports.Generate(job.ConsumerID, job.Payload.From, job.Payload.To)
 	if err != nil {
-		return app.models.Job.MarkFailed(ctx, job.ID, err.Error())
+		return app.models.Jobs.MarkFailed(ctx, job.ID, err.Error())
 	}
 	result, err := json.Marshal(report)
 	if err != nil {
-		return app.models.Job.MarkFailed(ctx, job.ID, err.Error())
+		return app.models.Jobs.MarkFailed(ctx, job.ID, err.Error())
 	}
-	if err := app.models.Job.MarkCompleted(ctx, job.ID, result); err != nil {
+	if err := app.models.Jobs.MarkCompleted(ctx, job.ID, result); err != nil {
 		return err
 	}
 	app.logger.Info("report job completed", "job_id", job.PublicID)

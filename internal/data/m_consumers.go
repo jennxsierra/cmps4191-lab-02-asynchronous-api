@@ -7,135 +7,119 @@ import (
 	"time"
 
 	"github.com/jennxsierra/cmps4191-lab-02-asynchronous-api/internal/validator"
-	"github.com/google/uuid"
+	"github.com/lib/pq"
 )
 
-// ConsumerStatus represents the enumerated statuses of a consumer.
-type ConsumerStatus string
+var ErrDuplicateEmail = errors.New("duplicate email address")
+var ErrRecordNotFound = errors.New("no record found")
+var ErrEditConflict = errors.New("edit conflict")
 
-const (
-	ConsumerStatusActive     ConsumerStatus = "active"
-	ConsumerStatusSuspended  ConsumerStatus = "suspended"
-	ConsumerStatusTerminated ConsumerStatus = "terminated"
-)
+func ValidateConsumer(v *validator.Validator, consumer *Consumer) {
+	v.Check(consumer.Name != "", "name", "must be provided")
+	v.Check(len(consumer.Name) <= 200, "name", "must not exceed 200 characters")
+	v.Check(consumer.Email != "", "email", "must be provided")
+	v.Check(validator.Matches(consumer.Email, validator.EmailRX), "email", "must be a valid email address")
+}
 
-// Consumer maps the consumer entity.
 type Consumer struct {
-	ID        uuid.UUID      `json:"id"`
-	Name      string         `json:"name"`
-	Email     string         `json:"email"`
-	Status    ConsumerStatus `json:"status"`
-	Version   int            `json:"version"`
-	CreatedAt time.Time      `json:"created_at"`
-	UpdatedAt time.Time      `json:"updated_at"`
+	ID        string    `json:"id"`
+	Name      string    `json:"name"`
+	Email     string    `json:"email"`
+	Status    string    `json:"status"`
+	Version   int       `json:"version"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
-// ValidateContactEmail validates an email against the regular expression.
-func ValidateContactEmail(v *validator.Validator, email string) {
-	v.Check(email != "", "email", "must be provided")
-	v.Check(validator.Matches(email, validator.EmailRX), "email", "must be a valid email address")
-}
-
-// ValidateConsumer perorms validation checks for a consumer record.
-func ValidateConsumer(v *validator.Validator, c *Consumer) {
-	v.Check(c.Name != "", "name", "must be provided")
-	ValidateContactEmail(v, c.Email)
-	v.Check(c.Status == ConsumerStatusActive ||
-		c.Status == ConsumerStatusSuspended ||
-		c.Status == ConsumerStatusTerminated,
-		"status", "must be a valid status",
-	)
-}
-
-// ConsumerModel holds the database handler.
 type ConsumerModel struct {
+	// This struct is used to interact with the database
 	DB *sql.DB
 }
 
-// Insert creates a consumer record.
 func (m ConsumerModel) Insert(c *Consumer) error {
 	query := `
 		INSERT INTO consumers (name, email)
 		VALUES ($1, $2)
-		RETURNING id, status, version, created_at, updated_at`
-
-	args := []any{c.Name, c.Email}
-
+		RETURNING id, status, version, created_at, updated_at
+		`
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	return m.DB.QueryRowContext(ctx, query, args...).Scan(&c.ID, &c.Status, &c.Version, &c.CreatedAt, &c.UpdatedAt)
-}
-
-// GetByID retrieves a single consumer record by its ID.
-func (m ConsumerModel) GetByID(id uuid.UUID) (*Consumer, error) {
-	query := `
-		SELECT id, name, email, status, version, created_at, updated_at
-		FROM consumers
-		WHERE id = $1`
-
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-	defer cancel()
-
-	var c Consumer
-	err := m.DB.QueryRowContext(ctx, query, id).Scan(&c.ID, &c.Name, &c.Email, &c.Status, &c.Version, &c.CreatedAt, &c.UpdatedAt)
+	err := m.DB.QueryRowContext(ctx, query, c.Name, c.Email).Scan(
+		&c.ID,
+		&c.Status,
+		&c.Version,
+		&c.CreatedAt,
+		&c.UpdatedAt,
+	)
 	if err != nil {
-		switch {
-		case errors.Is(err, sql.ErrNoRows):
-			return nil, ErrRecordNotFound
-		default:
-			return nil, err
+		var pgErr *pq.Error
+		if errors.As(err, &pgErr) {
+			if pgErr.Code == "23505" && pgErr.Constraint == "consumers_email_key" {
+				return ErrDuplicateEmail
+			}
 		}
-	}
-
-	return &c, nil
-}
-
-// Update modifies a consumer record by id.
-func (m ConsumerModel) Update(c *Consumer) error {
-	query := `
-		UPDATE consumers
-		SET name = $1, email = $2, status = $3, version = version + 1
-		WHERE id = $4
-		RETURNING version, updated_at`
-
-	args := []any{c.Name, c.Email, c.Status, c.ID}
-
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-	defer cancel()
-
-	err := m.DB.QueryRowContext(ctx, query, args...).Scan(&c.Version, &c.UpdatedAt)
-	if err != nil {
-		switch {
-		case errors.Is(err, sql.ErrNoRows):
-			return ErrRecordNotFound
-		default:
-			return err
-		}
+		return err
 	}
 
 	return nil
 }
 
-// Delete removes a consumer record by id.
-func (m ConsumerModel) Delete(id uuid.UUID) error {
+func (m ConsumerModel) Get(id string) (*Consumer, error) {
 	query := `
-		DELETE FROM consumers
-		WHERE id = $1`
-
+		SELECT id, name, email, status, version, created_at, updated_at
+		FROM consumers
+		WHERE id = $1
+	`
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	result, err := m.DB.ExecContext(ctx, query, id)
+	var c Consumer
+
+	err := m.DB.QueryRowContext(ctx, query, id).Scan(
+		&c.ID,
+		&c.Name,
+		&c.Email,
+		&c.Status,
+		&c.Version,
+		&c.CreatedAt,
+		&c.UpdatedAt,
+	)
 	if err != nil {
-		return err
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, ErrRecordNotFound
+		}
+		return nil, err
 	}
-	rowsAffected, err := result.RowsAffected()
+
+	return &c, nil
+}
+
+func (m ConsumerModel) Update(c *Consumer) error {
+	query := `
+		UPDATE consumers
+		SET name = $1, email = $2, version = version + 1
+		WHERE id = $3 AND version = $4
+		RETURNING version, updated_at
+	`
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	err := m.DB.QueryRowContext(ctx, query, c.Name, c.Email, c.ID, c.Version).Scan(
+		&c.Version,
+		&c.UpdatedAt,
+	)
 	if err != nil {
+		var pgErr *pq.Error
+		if errors.As(err, &pgErr) {
+			if pgErr.Code == "23505" && pgErr.Constraint == "consumers_email_key" {
+				return ErrDuplicateEmail
+			}
+		}
+		if errors.Is(err, sql.ErrNoRows) {
+			return ErrEditConflict
+		}
 		return err
-	}
-	if rowsAffected == 0 {
-		return ErrRecordNotFound
 	}
 
 	return nil

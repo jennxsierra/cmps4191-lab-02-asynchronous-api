@@ -36,7 +36,7 @@ func (app *application) createReportHandler(w http.ResponseWriter, r *http.Reque
 		JobType:    "consumer_activity_report",
 		Payload:    data.ReportPayload{From: input.From, To: input.To},
 	}
-	if err := app.models.Job.Insert(job); err != nil {
+	if err := app.models.Jobs.Insert(job); err != nil {
 		if errors.Is(err, data.ErrRecordNotFound) {
 			app.notFoundResponse(w, r)
 			return
@@ -55,7 +55,13 @@ func (app *application) createReportHandler(w http.ResponseWriter, r *http.Reque
 }
 
 func (app *application) getJobHandler(w http.ResponseWriter, r *http.Request) {
-	job, err := app.models.Job.GetByPublicID(r.PathValue("id"))
+	id, err := app.readUUIDParam("id", r)
+	if err != nil {
+		app.notFoundResponse(w, r)
+		return
+	}
+
+	job, err := app.models.Jobs.GetByPublicID(id)
 	if err != nil {
 		if errors.Is(err, data.ErrRecordNotFound) {
 			app.notFoundResponse(w, r)

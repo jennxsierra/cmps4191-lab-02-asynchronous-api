@@ -10,19 +10,15 @@ func TestNewModelsWiresDB(t *testing.T) {
 	db := &sql.DB{}
 	models := NewModels(db)
 
-	if models.Consumer.DB != db {
+	if models.Consumers.DB != db {
 		t.Fatal("Consumer model DB was not wired correctly")
 	}
 
-	if models.APIKey.DB != db {
-		t.Fatal("APIKey model DB was not wired correctly")
-	}
-
-	if models.Job.DB != db {
+	if models.Jobs.DB != db {
 		t.Fatal("Job model DB was not wired correctly")
 	}
 
-	if models.ConsumerActivityReport.DB != db {
+	if models.Reports.DB != db {
 		t.Fatal("ConsumerActivityReport model DB was not wired correctly")
 	}
 }

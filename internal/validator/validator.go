@@ -2,7 +2,6 @@ package validator
 
 import (
 	"regexp"
-	"slices"
 )
 
 var (
@@ -42,24 +41,7 @@ func (v *Validator) Check(ok bool, key, message string) {
 	}
 }
 
-// PermittedValue checks if a value is contained in a list of permitted
-// values.
-func PermittedValue[T comparable](value T, permittedValues ...T) bool {
-	return slices.Contains(permittedValues, value)
-}
-
 // Matches checks if a given string conforms to a regular expression.
 func Matches(value string, rx *regexp.Regexp) bool {
 	return rx.MatchString(value)
-}
-
-// Unique checks a given slice to see if all values in it are unique.
-func Unique[T comparable](values []T) bool {
-	uniqueValues := make(map[T]bool)
-
-	for _, value := range values {
-		uniqueValues[value] = true
-	}
-
-	return len(values) == len(uniqueValues)
 }

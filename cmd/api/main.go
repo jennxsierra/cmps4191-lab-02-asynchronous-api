@@ -23,7 +23,6 @@ var (
 type config struct {
 	port               int           // API server port
 	env                string        // (development|staging|production)
-	timeout            int           // grace period in seconds for HTTP server shutdown
 	reportDelay        time.Duration // SYNCHRONOUS API TESTING: field for report generation delay
 	workerPollInterval time.Duration // interval for the report worker to poll for new jobs
 	db                 struct {
@@ -46,23 +45,20 @@ type application struct {
 
 func main() {
 	var cfg config
-	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
 
 	// FLAGS
 
 	// server flags
 	flag.IntVar(&cfg.port, "port", 4000, "API server port")
 	flag.StringVar(&cfg.env, "env", "development", "Environment (development|staging|production)")
-	flag.IntVar(&cfg.timeout, "timeout", 30, "Grace period in seconds for HTTP server shutdown")
+	flag.DurationVar(&cfg.reportDelay, "report-delay", 0, "Artificial report-generation delay")                            // SYNCHRONOUS API TESTING
+	flag.DurationVar(&cfg.workerPollInterval, "worker-poll-interval", 250*time.Millisecond, "Worker queue-check interval") // ASYNCHRONOUS API TESTING
 
 	// database flags
 	flag.StringVar(&cfg.db.dsn, "db-dsn", "", "PostgreSQL DSN")
 	flag.IntVar(&cfg.db.maxOpenConns, "db-max-open-conns", 25, "PostgreSQL max open connections")
 	flag.IntVar(&cfg.db.maxIdleConns, "db-max-idle-conns", 25, "PostgreSQL max idle connections")
 	flag.DurationVar(&cfg.db.maxIdleTime, "db-max-idle-time", 15*time.Minute, "PostgreSQL max connection idle time")
-
-	// SYNCHRONOUS API TESTING: flag for report generation delay
-	flag.DurationVar(&cfg.reportDelay, "report-delay", 0, "Artificial report-generation delay")
 
 	// version flag
 	displayVersion := flag.Bool("version", false, "Display program version")
@@ -71,9 +67,12 @@ func main() {
 
 	// display program version and exit if the version flag was passed
 	if *displayVersion {
-		fmt.Printf("Version:\t%s\n", version)
+		fmt.Printf("version:\t%s\n", version)
 		os.Exit(0)
 	}
+
+	// logger
+	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
 
 	// DATABASE
 
@@ -83,7 +82,7 @@ func main() {
 		os.Exit(1)
 	}
 	defer db.Close()
-	logger.Info("Database connection pool established")
+	logger.Info("database connection pool established")
 
 	// APPLICATION
 
