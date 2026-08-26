@@ -42,3 +42,10 @@ cp .envrc.example .envrc
 make db/migrations/up
 make run
 ```
+
+#### Make Script Executable and Run It
+
+```
+chmod +x measure_async.sh
+./measure_async.sh
+```
