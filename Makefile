@@ -111,36 +111,26 @@ build/api:
 # TESTS
 # ==================================================================================== #
 
-.PHONY: test/0s
-test/0s:
+.PHONY: test/report-delay/0s
+test/report-delay/0s:
 	go run ./cmd/api \
 		-db-dsn=${GATEKEEPER_DB_DSN} \
 		-report-delay=0s
 
-.PHONY: test/3s
-test/3s:
+.PHONY: test/report-delay/3s
+test/report-delay/3s:
 	go run ./cmd/api \
 		-db-dsn=${GATEKEEPER_DB_DSN} \
 		-report-delay=3s
 
 .PHONY: test/7s
-test/7s:
-	go run ./cmd/api \
+.PHONY: test/report-delay/7s
+test/report-delay/7s:
 		-db-dsn=${GATEKEEPER_DB_DSN} \
 		-report-delay=7s
 
-.PHONY: test/12s
-test/12s:
+.PHONY: test/report-delay/12s
+test/report-delay/12s:
 	go run ./cmd/api \
 		-db-dsn=${GATEKEEPER_DB_DSN} \
 		-report-delay=12s
-
-.PHONY: test/curl/report-generation
-test/curl/report-generation:
-	curl --silent --show-error \
-		--output response.json \
-		--write-out 'status=%{http_code}\ntime=%{time_total}s\nbytes=%{size_download}\n' \
-		--request POST \
-		--header 'Content-Type: application/json' \
-		--data @request.json \
-		http://localhost:4000/v1/reports
