@@ -123,9 +123,9 @@ test/report-delay/3s:
 		-db-dsn=${GATEKEEPER_DB_DSN} \
 		-report-delay=3s
 
-.PHONY: test/7s
 .PHONY: test/report-delay/7s
 test/report-delay/7s:
+	go run ./cmd/api \
 		-db-dsn=${GATEKEEPER_DB_DSN} \
 		-report-delay=7s
 
