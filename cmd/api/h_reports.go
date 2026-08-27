@@ -8,6 +8,7 @@ import (
 
 	"github.com/jennxsierra/cmps4191-lab-02-asynchronous-api/internal/data"
 	"github.com/jennxsierra/cmps4191-lab-02-asynchronous-api/internal/validator"
+	"github.com/julienschmidt/httprouter"
 )
 
 func (app *application) createReportHandler(w http.ResponseWriter, r *http.Request) {
@@ -55,13 +56,7 @@ func (app *application) createReportHandler(w http.ResponseWriter, r *http.Reque
 }
 
 func (app *application) getJobHandler(w http.ResponseWriter, r *http.Request) {
-	id, err := app.readUUIDParam("id", r)
-	if err != nil {
-		app.notFoundResponse(w, r)
-		return
-	}
-
-	job, err := app.models.Jobs.GetByPublicID(id)
+	job, err := app.models.Jobs.GetByPublicID((httprouter.ParamsFromContext(r.Context())).ByName("id")) // httprouter package version
 	if err != nil {
 		if errors.Is(err, data.ErrRecordNotFound) {
 			app.notFoundResponse(w, r)

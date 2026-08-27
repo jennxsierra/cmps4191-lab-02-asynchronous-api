@@ -7,9 +7,6 @@ import (
 	"io"
 	"net/http"
 	"strings"
-
-	"github.com/google/uuid"
-	"github.com/julienschmidt/httprouter"
 )
 
 // envelope is used to enclose a JSON response.
@@ -102,17 +99,4 @@ func (app *application) readJSON(w http.ResponseWriter, r *http.Request, dst any
 	}
 
 	return nil
-}
-
-// readUUIDParam extracts a UUID path parameter from the request context and parses it.
-func (app *application) readUUIDParam(paramName string, r *http.Request) (uuid.UUID, error) {
-	params := httprouter.ParamsFromContext(r.Context())
-	paramStr := params.ByName(paramName)
-
-	id, err := uuid.Parse(paramStr)
-	if err != nil {
-		return uuid.Nil, errors.New("invalid uuid parameter")
-	}
-
-	return id, nil
 }
